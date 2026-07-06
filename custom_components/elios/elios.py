@@ -21,6 +21,23 @@ ONE_PULSE = 550
 ONE_GAP = 1550
 ZERO_PULSE = 550
 ZERO_GAP = 550
+FRAME_GAP = 5600
+
+
+def _frame_pulses(data: bytes) -> list[int]:
+    result = [LEADING_PULSE, LEADING_GAP]
+
+    for byte in data:
+        for bit in range(7, -1, -1):
+            if byte >> bit & 1:
+                result += [ONE_PULSE, ONE_GAP]
+            else:
+                result += [ZERO_PULSE, ZERO_GAP]
+
+    # a closing mark terminates the final gap; without it the receiver
+    # cannot delimit the last bit
+    result.append(ONE_PULSE)
+    return result
 
 
 class Mode(Enum):
@@ -125,23 +142,9 @@ class State:
 
     @staticmethod
     def _checksum(data: bytes) -> int:
-        reversed_data = [bitreverse(byte) for byte in data]
-
-        xor_nibble = (
-            reversed_data[0]
-            ^ reversed_data[1]
-            ^ reversed_data[2]
-            ^ 0b100
-            ^ (0b1000 if reversed_data[1] >> 2 & 0b111 == 0 else 0)
-        ) & 0xF
-        sum_nibble = (
-            (reversed_data[0] >> 4)
-            + (reversed_data[1] >> 4)
-            + (reversed_data[2] >> 4)
-            + (reversed_data[2] >> 3 & 1)
-        ) & 0xF
-
-        return bitreverse((~sum_nibble & 0xF) << 4 | xor_nibble)
+        # the Midea-family formula (the Elios is a rebadged Midea)
+        total = sum(bitreverse(byte) for byte in data)
+        return bitreverse((256 - total) & 0xFF)
 
     def as_bytes(self) -> bytes:
         data = self._raw_parts()
@@ -153,17 +156,13 @@ class State:
     def pulses(self) -> list[int]:
         """Encode the state as an IR pulse/gap sequence in microseconds.
 
-        A closing mark terminates the final gap; without it the receiver
-        cannot delimit the last bit.
+        Midea transmissions send the frame followed by its bitwise
+        complement — the receiver's error check.
         """
-        result = [LEADING_PULSE, LEADING_GAP]
+        frame = self.as_bytes()
+        inverted = bytes(byte ^ 0xFF for byte in frame)
 
-        for byte in self.as_bytes():
-            for bit in range(7, -1, -1):
-                if byte >> bit & 1:
-                    result += [ONE_PULSE, ONE_GAP]
-                else:
-                    result += [ZERO_PULSE, ZERO_GAP]
-
-        result.append(ONE_PULSE)
+        result = _frame_pulses(frame)
+        result.append(FRAME_GAP)
+        result += _frame_pulses(inverted)
         return result

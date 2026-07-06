@@ -1,13 +1,16 @@
 import pytest
 
 from elios import (
+    FRAME_GAP,
     LEADING_GAP,
     LEADING_PULSE,
     MAX_CELSIUS,
     MAX_FAHRENHEIT,
     MIN_CELSIUS,
     MIN_FAHRENHEIT,
+    ONE_GAP,
     ONE_PULSE,
+    ZERO_GAP,
     FanSpeed,
     Mode,
     State,
@@ -74,6 +77,45 @@ def test_golden_values_match_acproto(kwargs, expected):
     assert State.new(**kwargs).as_value() == expected
 
 
+# Vectors from the Midea reference checksum (IRremoteESP8266), covering fan
+# speeds and temperatures absent from the captures.
+MIDEA_DERIVED = [
+    (
+        dict(mode=Mode.COLD, powered=True, temperature=Temperature.celsius(24), fan_speed=FanSpeed.LOW),
+        0b10100001_10001000_01000111_11111111_11111111_01010001,
+    ),
+    (
+        dict(mode=Mode.COLD, powered=True, temperature=Temperature.celsius(24), fan_speed=FanSpeed.MEDIUM),
+        0b10100001_10010000_01000111_11111111_11111111_01001001,
+    ),
+    (
+        dict(mode=Mode.COLD, powered=True, temperature=Temperature.celsius(24), fan_speed=FanSpeed.HIGH),
+        0b10100001_10011000_01000111_11111111_11111111_01000001,
+    ),
+    (
+        dict(mode=Mode.HEAT, powered=True, temperature=Temperature.celsius(21), fan_speed=FanSpeed.LOW),
+        0b10100001_10001011_01000100_11111111_11111111_01010001,
+    ),
+    (
+        dict(mode=Mode.DRY, powered=True, temperature=Temperature.celsius(24)),
+        0b10100001_10000001_01000111_11111111_11111111_01011000,
+    ),
+    (
+        dict(mode=Mode.DRY, powered=True, temperature=Temperature.celsius(20)),
+        0b10100001_10000001_01000011_11111111_11111111_01011100,
+    ),
+    (
+        dict(mode=Mode.AUTOMATIC, powered=True, temperature=Temperature.celsius(22), sleep=True),
+        0b10100001_11000010_01000101_11111111_11111111_00011001,
+    ),
+]
+
+
+@pytest.mark.parametrize("kwargs, expected", MIDEA_DERIVED)
+def test_midea_reference_vectors(kwargs, expected):
+    assert State.new(**kwargs).as_value() == expected
+
+
 def test_automatic_mode_rejects_fan_speed():
     with pytest.raises(ValueError):
         State.new(
@@ -123,7 +165,25 @@ def test_pulses_shape():
         mode=Mode.COLD, powered=True, temperature=Temperature.celsius(24)
     ).pulses()
 
-    assert len(pulses) == 2 + 48 * 2 + 1
+    frame = 2 + 48 * 2 + 1
+    assert len(pulses) == frame * 2 + 1
     assert pulses[0] == LEADING_PULSE
     assert pulses[1] == LEADING_GAP
+    assert pulses[frame - 1] == ONE_PULSE
+    assert pulses[frame] == FRAME_GAP
+    assert pulses[frame + 1] == LEADING_PULSE
     assert pulses[-1] == ONE_PULSE
+
+
+def test_second_frame_is_bitwise_complement():
+    pulses = State.new(
+        mode=Mode.COLD, powered=True, temperature=Temperature.celsius(24)
+    ).pulses()
+
+    frame = 2 + 48 * 2 + 1
+    first_bits = pulses[3 : frame - 1 : 2]
+    second_bits = pulses[frame + 4 :: 2]
+    flipped = {ONE_GAP: ZERO_GAP, ZERO_GAP: ONE_GAP}
+
+    assert len(first_bits) == len(second_bits) == 48
+    assert second_bits == [flipped[gap] for gap in first_bits]
