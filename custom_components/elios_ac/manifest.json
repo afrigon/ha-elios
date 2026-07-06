@@ -1,0 +1,11 @@
+{
+  "domain": "elios_ac",
+  "name": "Elios AC",
+  "codeowners": ["@afrigon"],
+  "config_flow": true,
+  "documentation": "https://github.com/afrigon/ha-elios",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "requirements": ["broadlink6 @ git+https://github.com/afrigon/ha-broadlink6"],
+  "version": "0.1.0"
+}

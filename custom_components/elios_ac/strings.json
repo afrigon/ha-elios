@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Address of the Broadlink RM4 that faces the air conditioner.",
+        "data": {
+          "host": "Host"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the device."
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}

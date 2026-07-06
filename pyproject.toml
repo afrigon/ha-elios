@@ -1,0 +1,15 @@
+[project]
+name = "elios-ac"
+version = "0.1.0"
+description = "Home Assistant integration for Elios air conditioners via Broadlink RM4 over IPv6"
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["custom_components/elios_ac"]
+testpaths = ["tests"]
+
+[tool.uv]
+package = false
