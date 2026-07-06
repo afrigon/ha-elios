@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 dev = ["pytest"]
 
 [tool.pytest.ini_options]
-pythonpath = ["custom_components/elios_ac"]
+pythonpath = ["custom_components/elios"]
 testpaths = ["tests"]
 
 [tool.uv]

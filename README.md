@@ -1,3 +1,5 @@
+<img src="assets/logo.webp" alt="Elios" height="56">
+
 # ha-elios
 
 Home Assistant climate integration for Elios air conditioners controlled over
@@ -21,5 +23,5 @@ state sent and is restored across restarts. Input is debounced — adjustments
 are applied to the card immediately, and one frame is transmitted once the
 state has been left untouched for two seconds.
 
-Install by copying `custom_components/elios_ac/` into the Home Assistant
+Install by copying `custom_components/elios/` into the Home Assistant
 configuration directory, or as a HACS custom repository.
