@@ -1,17 +1,32 @@
-"""Config flow: a host, validated by asking the device who it is."""
+"""Config flow: pick the remote entity that faces the AC, and optional sensors."""
 
 from typing import Any
 
-import broadlink6
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_HOST, CONF_MAC
-from homeassistant.helpers.device_registry import format_mac
+from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
 
-from .const import CONF_DEVTYPE, DOMAIN
+from .const import (
+    CONF_HUMIDITY_SENSOR,
+    CONF_REMOTE_ENTITY,
+    CONF_TEMPERATURE_SENSOR,
+    DOMAIN,
+)
 
-USER_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
+USER_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_REMOTE_ENTITY): EntitySelector(
+            EntitySelectorConfig(domain="remote")
+        ),
+        vol.Optional(CONF_TEMPERATURE_SENSOR): EntitySelector(
+            EntitySelectorConfig(domain="sensor", device_class="temperature")
+        ),
+        vol.Optional(CONF_HUMIDITY_SENSOR): EntitySelector(
+            EntitySelectorConfig(domain="sensor", device_class="humidity")
+        ),
+    }
+)
 
 
 class EliosConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -20,26 +35,7 @@ class EliosConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        errors: dict[str, str] = {}
-
         if user_input is not None:
-            host = user_input[CONF_HOST]
-            try:
-                info = await self.hass.async_add_executor_job(broadlink6.hello, host)
-            except broadlink6.BroadlinkError:
-                errors["base"] = "cannot_connect"
-            else:
-                await self.async_set_unique_id(format_mac(info.mac.hex(":")))
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(
-                    title=f"Elios AC ({host})",
-                    data={
-                        CONF_HOST: host,
-                        CONF_MAC: info.mac.hex(),
-                        CONF_DEVTYPE: info.devtype,
-                    },
-                )
+            return self.async_create_entry(title="Elios AC", data=user_input)
 
-        return self.async_show_form(
-            step_id="user", data_schema=USER_SCHEMA, errors=errors
-        )
+        return self.async_show_form(step_id="user", data_schema=USER_SCHEMA)

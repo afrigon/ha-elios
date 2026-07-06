@@ -2,17 +2,13 @@
   "config": {
     "step": {
       "user": {
-        "description": "Address of the Broadlink RM4 that faces the air conditioner.",
+        "description": "The remote entity must accept base64 Broadlink packets ('b64:...'), like Broadlink IPv6 or the core Broadlink integration.",
         "data": {
-          "host": "Host"
+          "remote_entity": "Remote entity",
+          "temperature_sensor": "Temperature sensor (optional)",
+          "humidity_sensor": "Humidity sensor (optional)"
         }
       }
-    },
-    "error": {
-      "cannot_connect": "Cannot reach the device."
-    },
-    "abort": {
-      "already_configured": "Device is already configured"
     }
   }
 }
