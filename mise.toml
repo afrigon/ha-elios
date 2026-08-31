@@ -4,3 +4,7 @@ lockfile = true
 [tools]
 python = "3.12"
 uv = "0"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"
