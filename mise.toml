@@ -2,7 +2,6 @@
 lockfile = true
 
 [tools]
-python = "3.12"
 uv = "0.12"
 
 [tasks.test]
