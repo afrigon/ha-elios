@@ -1,0 +1,9 @@
+[settings]
+lockfile = true
+
+[tools]
+uv = "0.12"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"
